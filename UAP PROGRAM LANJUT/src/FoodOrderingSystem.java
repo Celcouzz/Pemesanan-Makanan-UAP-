@@ -1,12 +1,14 @@
+package Gambar;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.net.URL;
 
 class FoodOrderingSystem {
 
-     // Model untuk Menu Makanan
+    // Model untuk Menu Makanan
     static class Menu {
         private String name;
         private double price;
@@ -54,6 +56,45 @@ class FoodOrderingSystem {
 
         public String getOrderDetails() {
             return customerName + " ordered " + quantity + " x " + menuItem.getName() + " for $" + getTotalPrice();
+        }
+    }
+
+    // GUI untuk Halaman Restoran
+    static class RestaurantPage {
+        private JFrame frame;
+
+        public RestaurantPage() {
+            frame = new JFrame("Restoran");
+            frame.setSize(500, 400);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setLayout(new BorderLayout());
+
+            // Label judul
+            JLabel titleLabel = new JLabel("Restoran", JLabel.CENTER);
+            titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
+            frame.add(titleLabel, BorderLayout.NORTH);
+
+            // Tempat gambar
+            JLabel imageLabel = new JLabel();
+            imageLabel.setHorizontalAlignment(JLabel.CENTER);
+            imageLabel.setIcon(new ImageIcon("src/Gambar/Restoran.jpeg")); // Ganti dengan path gambar Anda
+            frame.add(imageLabel, BorderLayout.CENTER);
+
+
+
+            // Tombol "Pesan"
+            JButton orderButton = new JButton("Pesan");
+            orderButton.setFont(new Font("Arial", Font.PLAIN, 18));
+            orderButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    frame.dispose(); // Tutup halaman restoran
+                    new OrderGUI(); // Buka halaman pemesanan
+                }
+            });
+            frame.add(orderButton, BorderLayout.SOUTH);
+
+            frame.setVisible(true);
         }
     }
 
@@ -149,7 +190,7 @@ class FoodOrderingSystem {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new OrderGUI();
+                new RestaurantPage(); // Memulai dengan halaman restoran
             }
         });
     }
