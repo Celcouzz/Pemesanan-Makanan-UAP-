@@ -1,5 +1,6 @@
 package Gambar;
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -12,11 +13,13 @@ class FoodOrderingSystem {
         private String name;
         private double price;
         private String description;
+        private String imagePath;
 
-        public Menu(String name, double price, String description) {
+        public Menu(String name, double price, String description, String imagePath) {
             this.name = name;
             this.price = price;
             this.description = description;
+            this.imagePath = imagePath;
         }
 
         public String getName() {
@@ -29,6 +32,10 @@ class FoodOrderingSystem {
 
         public String getDescription() {
             return description;
+        }
+
+        public String getImagePath() {
+            return imagePath;
         }
 
         @Override
@@ -80,7 +87,7 @@ class FoodOrderingSystem {
             // Tempat gambar
             JLabel imageLabel = new JLabel();
             imageLabel.setHorizontalAlignment(JLabel.CENTER);
-            imageLabel.setIcon(new ImageIcon("UAP PROGRAM LANJUT/src/Gambar/Restoran.jpeg")); // Ganti dengan path gambar Anda
+            imageLabel.setIcon(new ImageIcon("Gambar/Restoran.jpeg")); // Ganti dengan path gambar Anda
             frame.add(imageLabel, BorderLayout.CENTER);
 
             // Tombol "Pesan"
@@ -185,6 +192,7 @@ class FoodOrderingSystem {
         private JTextField quantityField;
         private JButton submitButton;
         private JTextArea orderDisplay;
+        private JLabel foodImageLabel;
         private List<Order> orders = new ArrayList<>();
 
         private String customerName;
@@ -192,13 +200,17 @@ class FoodOrderingSystem {
         private int orderNumber;
 
         private Menu[] appetizers = {
-                new Menu("Spring Rolls", 3.99, "Crispy rolls with vegetables"),
-                new Menu("Garlic Bread", 2.99, "Buttery garlic bread")
+                new Menu("Lumpia", 3.99, "Gulungan sayur yang renyah", "Gambar/Lumpia.jpeg"),
+                new Menu("Kentang Goreng", 2.99, "Kentang yang dipotong dan terasa renyah dan gurih", "Gambar/Kentang_Goreng.jpeg")
         };
         private Menu[] mainCourses = {
-                new Menu("Burger", 5.99, "Delicious beef burger"),
-                new Menu("Pizza", 7.99, "Cheesy and tasty pizza"),
-                new Menu("Pasta", 6.99, "Italian pasta with tomato sauce")
+                new Menu("Burger", 5.99, "Burger sapi yang juicy", "Gambar/Burger.jpeg"),
+                new Menu("Pizza", 7.99, "Pizza dengan topping keju leleh", "Gambar/Pizza.jpeg"),
+                new Menu("Pasta", 6.99, "Pasta dengan saus khas italia", "Gambar/Pasta.jpeg")
+        };
+        private Menu[] desserts = {
+                new Menu("Es Krim", 4.50, "Es krim rasa vanilla", "Gambar/Es_krim.jpeg"),
+                new Menu("Kue", 5.00, "Kue rasa coklat", "Gambar/Kue.jpeg")
         };
 
         public MenuSelectionPage(String customerName, String orderType, int orderNumber) {
@@ -207,7 +219,7 @@ class FoodOrderingSystem {
             this.orderNumber = orderNumber;
 
             frame = new JFrame("Menu Selection");
-            frame.setSize(500, 500);
+            frame.setSize(600, 600);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLayout(new GridBagLayout());
 
@@ -221,7 +233,7 @@ class FoodOrderingSystem {
             frame.add(new JLabel("Select Category:"), gbc);
 
             gbc.gridx = 1;
-            categoryComboBox = new JComboBox<>(new String[]{"Appetizers", "Main Courses"});
+            categoryComboBox = new JComboBox<>(new String[]{"Appetizers", "Main Courses", "Desserts"});
             categoryComboBox.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -237,11 +249,28 @@ class FoodOrderingSystem {
 
             gbc.gridx = 1;
             menuComboBox = new JComboBox<>(appetizers);
+            menuComboBox.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    updateFoodImage();
+                }
+            });
             frame.add(menuComboBox, gbc);
+
+            // Tempat Gambar
+            gbc.gridx = 0;
+            gbc.gridy = 2;
+            gbc.gridwidth = 2;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            foodImageLabel = new JLabel();
+            foodImageLabel.setHorizontalAlignment(JLabel.CENTER);
+            frame.add(foodImageLabel, gbc);
+            updateFoodImage(); // Panggil metode pertama kali untuk menampilkan gambar default
 
             // Input Quantity
             gbc.gridx = 0;
-            gbc.gridy = 2;
+            gbc.gridy = 3;
+            gbc.gridwidth = 1;
             frame.add(new JLabel("Quantity:"), gbc);
 
             gbc.gridx = 1;
@@ -250,72 +279,79 @@ class FoodOrderingSystem {
 
             // Tombol Submit Pesanan
             gbc.gridx = 1;
-            gbc.gridy = 3;
+            gbc.gridy = 4;
             gbc.anchor = GridBagConstraints.EAST;
             submitButton = new JButton("Place Order");
             submitButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    try {
-                        Menu selectedMenu = (Menu) menuComboBox.getSelectedItem();
-                        int quantity = Integer.parseInt(quantityField.getText());
-
-                        if (quantity <= 0) {
-                            throw new IllegalArgumentException("Quantity must be greater than 0.");
-                        }
-
-                        // Create and store the order
-                        Order order = new Order(customerName, orderType, orderNumber, selectedMenu, quantity);
-                        orders.add(order);
-
-                        // Display the orders in the text area
-                        displayOrders();
-
-                    } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(frame, "Please enter a valid quantity.");
-                    } catch (IllegalArgumentException ex) {
-                        JOptionPane.showMessageDialog(frame, ex.getMessage());
-                    }
+                    placeOrder();
                 }
             });
             frame.add(submitButton, gbc);
 
-            // Display area for orders
+            // Tampilkan Pesanan
             gbc.gridx = 0;
-            gbc.gridy = 4;
+            gbc.gridy = 5;
             gbc.gridwidth = 2;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
             orderDisplay = new JTextArea(10, 40);
             orderDisplay.setEditable(false);
-            frame.add(new JScrollPane(orderDisplay), gbc);
+            JScrollPane scrollPane = new JScrollPane(orderDisplay);
+            frame.add(scrollPane, gbc);
 
             frame.setVisible(true);
         }
 
         private void updateMenuItems() {
-            String selectedCategory = (String) categoryComboBox.getSelectedItem();
-            menuComboBox.removeAllItems();
-            Menu[] items = selectedCategory.equals("Appetizers") ? appetizers : mainCourses;
-            for (Menu item : items) {
-                menuComboBox.addItem(item);
+            String category = (String) categoryComboBox.getSelectedItem();
+            switch (category) {
+                case "Appetizers":
+                    menuComboBox.setModel(new DefaultComboBoxModel<>(appetizers));
+                    break;
+                case "Main Courses":
+                    menuComboBox.setModel(new DefaultComboBoxModel<>(mainCourses));
+                    break;
+                case "Desserts":
+                    menuComboBox.setModel(new DefaultComboBoxModel<>(desserts));
+                    break;
             }
+            updateFoodImage();
         }
 
-        private void displayOrders() {
-            StringBuilder orderDetails = new StringBuilder();
-            for (Order order : orders) {
-                orderDetails.append(order.getOrderDetails()).append("\n");
+        private void updateFoodImage() {
+            Menu selectedMenu = (Menu) menuComboBox.getSelectedItem();
+            foodImageLabel.setIcon(new ImageIcon(selectedMenu.getImagePath()));
+        }
+
+        private void placeOrder() {
+            try {
+                Menu selectedMenu = (Menu) menuComboBox.getSelectedItem();
+                int quantity = Integer.parseInt(quantityField.getText());
+
+                if (quantity <= 0) {
+                    throw new IllegalArgumentException("Quantity must be greater than 0.");
+                }
+
+                Order order = new Order(customerName, orderType, orderNumber, selectedMenu, quantity);
+                orders.add(order);
+
+                orderDisplay.append(order.getOrderDetails() + "\n");
+
+                quantityField.setText(""); // Reset quantity field
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(frame, "Please enter a valid quantity.", "Input Error", JOptionPane.ERROR_MESSAGE);
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(frame, ex.getMessage(), "Input Error", JOptionPane.ERROR_MESSAGE);
             }
-            orderDisplay.setText(orderDetails.toString());
         }
     }
 
-    // Main Program
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                new RestaurantPage(); // Memulai dengan halaman restoran
+                new RestaurantPage(); // Tampilkan halaman restoran pertama
             }
         });
     }
