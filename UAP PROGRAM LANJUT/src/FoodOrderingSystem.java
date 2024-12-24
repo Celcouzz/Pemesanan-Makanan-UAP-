@@ -67,6 +67,26 @@ class FoodOrderingSystem {
         public String getOrderDetails() {
             return customerName + " (Order #" + orderNumber + ") ordered " + quantity + " x " + menuItem.getName() + " (" + orderType + ") for $" + getTotalPrice();
         }
+
+        public String getCustomerName() {
+            return customerName;
+        }
+
+        public String getOrderType() {
+            return orderType;
+        }
+
+        public int getOrderNumber() {
+            return orderNumber;
+        }
+
+        public String getMenuItemName() {
+            return menuItem.getName();
+        }
+
+        public int getQuantity() {
+            return quantity;
+        }
     }
 
     // GUI untuk Halaman Restoran
@@ -191,6 +211,7 @@ class FoodOrderingSystem {
         private JComboBox<Menu> menuComboBox;
         private JTextField quantityField;
         private JButton submitButton;
+        private JButton viewTableButton;
         private JTextArea orderDisplay;
         private JLabel foodImageLabel;
         private List<Order> orders = new ArrayList<>();
@@ -290,6 +311,19 @@ class FoodOrderingSystem {
             });
             frame.add(submitButton, gbc);
 
+            // Tombol View Table
+            gbc.gridx = 0;
+            gbc.gridy = 4;
+            gbc.anchor = GridBagConstraints.WEST;
+            viewTableButton = new JButton("View Table");
+            viewTableButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    new OrderTablePage(orders);
+                }
+            });
+            frame.add(viewTableButton, gbc);
+
             // Tampilkan Pesanan
             gbc.gridx = 0;
             gbc.gridy = 5;
@@ -326,18 +360,23 @@ class FoodOrderingSystem {
         private void placeOrder() {
             try {
                 Menu selectedMenu = (Menu) menuComboBox.getSelectedItem();
-                int quantity = Integer.parseInt(quantityField.getText());
+                int quantity = Integer.parseInt(quantityField.getText().trim());
 
                 if (quantity <= 0) {
                     throw new IllegalArgumentException("Quantity must be greater than 0.");
                 }
 
+                for (Order order : orders) {
+                    if (order.getMenuItemName().equals(selectedMenu.getName()) && order.getCustomerName().equals(customerName)) {
+                        JOptionPane.showMessageDialog(frame, "This order already exists.", "Duplicate Order", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+                }
+
                 Order order = new Order(customerName, orderType, orderNumber, selectedMenu, quantity);
                 orders.add(order);
-
                 orderDisplay.append(order.getOrderDetails() + "\n");
-
-                quantityField.setText(""); // Reset quantity field
+                quantityField.setText("");
 
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(frame, "Please enter a valid quantity.", "Input Error", JOptionPane.ERROR_MESSAGE);
@@ -347,12 +386,36 @@ class FoodOrderingSystem {
         }
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                new RestaurantPage(); // Tampilkan halaman restoran pertama
+    // GUI untuk Menampilkan Tabel Pesanan
+    static class OrderTablePage {
+        public OrderTablePage(List<Order> orders) {
+            JFrame frame = new JFrame("Order Table");
+            frame.setSize(600, 400);
+
+            String[] columnNames = {"Customer Name", "Order Type", "Order Number", "Menu Item", "Quantity", "Total Price"};
+            DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0);
+
+            for (Order order : orders) {
+                Object[] row = {
+                        order.getCustomerName(),
+                        order.getOrderType(),
+                        order.getOrderNumber(),
+                        order.getMenuItemName(),
+                        order.getQuantity(),
+                        order.getTotalPrice()
+                };
+                tableModel.addRow(row);
             }
-        });
+
+            JTable table = new JTable(tableModel);
+            JScrollPane scrollPane = new JScrollPane(table);
+
+            frame.add(scrollPane, BorderLayout.CENTER);
+            frame.setVisible(true);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(RestaurantPage::new);
     }
 }
